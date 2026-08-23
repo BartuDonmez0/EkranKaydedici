@@ -10,6 +10,7 @@ Ekran kaydı için ağır, hesap gerektiren veya reklamlı programlar kurmak yer
 
 ## Özellikler
 
+- **MP4'e doğrudan kayıt** — YouTube'a yüklemeye ve Gmail/WhatsApp önizlemesine hazır; dönüştürme adımı yok. Tarayıcı MP4 kaydını desteklemiyorsa otomatik olarak WebM'e düşer.
 - **Kamerasız** — yalnızca ekran + ses.
 - **Mikrofon + sistem/sekme sesi karıştırma** — ikisini aynı anda, tek dosyaya kaydeder (Web Audio API ile).
 - **Otomatik klasöre kayıt** — seçtiğiniz klasöre doğrudan yazılır, indirilenler klasörüne karışmaz. Klasör seçimi bir kez yapılır, tarayıcı hatırlar.
@@ -49,7 +50,7 @@ Sunucu (`server.js`) yalnızca bu statik dosyayı `http://localhost` üzerinden 
 
 ## Dosya formatı
 
-Kayıtlar `.webm` (VP9/Opus) olarak kaydedilir — VLC, Windows Media Player ve modern tarayıcılar doğrudan açar. Başka bir yerde `.mp4` gerekiyorsa:
+Kayıtlar tarayıcı destekliyorsa doğrudan **`.mp4`** (H.264/AAC) olarak kaydedilir — YouTube yüklemesi, Gmail/WhatsApp önizlemesi, VLC, Windows Media Player dahil hemen her yerde ek işlem gerekmeden açılır. Tarayıcınız MP4 kaydını desteklemiyorsa otomatik olarak `.webm` (VP9/Opus) kullanılır; bu durumda ve `.mp4` gerekiyorsa:
 
 ```bash
 ffmpeg -i kayit-....webm kayit.mp4

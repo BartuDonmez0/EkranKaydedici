@@ -77,7 +77,7 @@
 <div class="wrap">
   <p class="eyebrow">Yerel · Kamerasız · Tamamen Çevrimdışı</p>
   <h1>Ekran ve Ses Kaydedici</h1>
-  <p class="sub">Ekranınızı ve sesinizi (mikrofon + isterseniz sistem sesi) kaydedin, seçtiğiniz klasöre otomatik kaydedilsin, istediğiniz zaman tekrar izleyin.</p>
+  <p class="sub">Ekranınızı ve sesinizi (mikrofon + isterseniz sistem sesi) kaydedin, seçtiğiniz klasöre otomatik kaydedilsin, istediğiniz zaman tekrar izleyin. Kayıtlar doğrudan <strong style="color:#fff">MP4</strong> formatında alınır — YouTube'a yüklemeye ve Gmail'de önizlemeye hazır, ekstra dönüştürme gerekmez.</p>
 
   <div id="unsupportedWarn" class="warn" style="display:none">
     Tarayıcınız gerekli özellikleri (Dosya Sistemi Erişimi) desteklemiyor gibi görünüyor. Bu araç Chrome veya Edge (masaüstü) ile en iyi çalışır.
@@ -135,6 +135,8 @@ let micStream = null;
 let audioCtx = null;
 let timerInterval = null;
 let recordStart = null;
+let currentMimeType = "";
+let currentExt = "mp4";
 
 if (!("showDirectoryPicker" in window)) {
   unsupportedWarn.style.display = "block";
@@ -246,8 +248,19 @@ startBtn.onclick = async () => {
   preview.srcObject = screenStream;
   preview.style.display = "block";
 
-  const mimeCandidates = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"];
+  // MP4 (H.264/AAC) önce denenir — YouTube, Gmail önizlemesi, WhatsApp ve hemen her oynatıcı
+  // ile doğrudan uyumludur. Tarayıcı desteklemezse WebM'e (VP9/Opus) düşülür.
+  const mimeCandidates = [
+    'video/mp4;codecs="avc1.640028,mp4a.40.2"',
+    "video/mp4;codecs=avc1",
+    "video/mp4",
+    "video/webm;codecs=vp9,opus",
+    "video/webm;codecs=vp8,opus",
+    "video/webm",
+  ];
   const mimeType = mimeCandidates.find((m) => MediaRecorder.isTypeSupported(m)) || "";
+  currentMimeType = mimeType;
+  currentExt = mimeType.startsWith("video/mp4") ? "mp4" : "webm";
 
   recordedChunks = [];
   mediaRecorder = new MediaRecorder(mixedStream, mimeType ? { mimeType } : undefined);
@@ -289,9 +302,9 @@ async function onRecordingStop() {
   pickFolderBtn.disabled = false;
   setStatus("Kaydediliyor: dosyaya yazılıyor…", false);
 
-  const blob = new Blob(recordedChunks, { type: "video/webm" });
+  const blob = new Blob(recordedChunks, { type: currentMimeType || `video/${currentExt}` });
   const now = new Date();
-  const name = `kayit-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.webm`;
+  const name = `kayit-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.${currentExt}`;
 
   try {
     const fileHandle = await dirHandle.getFileHandle(name, { create: true });
@@ -309,7 +322,8 @@ async function refreshRecordings() {
   if (!dirHandle) return;
   const files = [];
   for await (const [name, handle] of dirHandle.entries()) {
-    if (handle.kind === "file" && name.toLowerCase().endsWith(".webm")) {
+    const lower = name.toLowerCase();
+    if (handle.kind === "file" && (lower.endsWith(".mp4") || lower.endsWith(".webm"))) {
       const file = await handle.getFile();
       files.push({ name, handle, size: file.size, lastModified: file.lastModified });
     }
