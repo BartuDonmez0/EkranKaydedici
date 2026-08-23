@@ -1,0 +1,10 @@
+{
+  "name": "ekran-kaydedici",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Kameraya gerek olmadan ekran + ses kaydı için basit, bağımlılıksız yerel araç.",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
