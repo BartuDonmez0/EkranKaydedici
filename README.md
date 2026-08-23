@@ -11,6 +11,7 @@ Ekran kaydı için ağır, hesap gerektiren veya reklamlı programlar kurmak yer
 ## Özellikler
 
 - **MP4'e doğrudan kayıt** — YouTube'a yüklemeye ve Gmail/WhatsApp önizlemesine hazır; dönüştürme adımı yok. Tarayıcı MP4 kaydını desteklemiyorsa otomatik olarak WebM'e düşer.
+- **Otomatik uyumluluk düzeltmesi** (ffmpeg kuruluysa) — tarayıcıların `MediaRecorder`'ı dosyayı akış hâlinde yazdığı için süre/arama meta verisi eksik kalır; Chrome/VLC bunu tolere eder ama Windows'un yerleşik oynatıcısı ileri sarmada `0xC00D3E84` hatası verebilir. Kayıt bitince araç dosyayı otomatik olarak (kayıpsız, `-c copy`) yeniden paketler.
 - **Kamerasız** — yalnızca ekran + ses.
 - **Mikrofon + sistem/sekme sesi karıştırma** — ikisini aynı anda, tek dosyaya kaydeder (Web Audio API ile).
 - **Otomatik klasöre kayıt** — seçtiğiniz klasöre doğrudan yazılır, indirilenler klasörüne karışmaz. Klasör seçimi bir kez yapılır, tarayıcı hatırlar.
@@ -35,6 +36,7 @@ veya Windows'ta `Baslat.bat` dosyasına çift tıklayın — tarayıcı otomatik
 
 - Node.js
 - Chrome veya Edge (masaüstü). Klasöre otomatik kaydetme, [File System Access API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API)'ye dayanır ve şu an yalnızca Chromium tabanlı tarayıcılarda destekleniyor.
+- **(Opsiyonel) ffmpeg** — otomatik uyumluluk düzeltmesi için. [gyan.dev üzerinden "essentials" derlemesini](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip) indirin, zip içindeki `bin/ffmpeg.exe`'yi bu projenin **`bin/ffmpeg.exe`** yoluna kopyalayın. Yoksa araç yine tam çalışır, sadece otomatik düzeltme adımı atlanır.
 
 ## Nasıl çalışır
 

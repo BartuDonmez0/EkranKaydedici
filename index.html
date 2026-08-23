@@ -137,6 +137,33 @@ let timerInterval = null;
 let recordStart = null;
 let currentMimeType = "";
 let currentExt = "mp4";
+let ffmpegAvailable = false;
+
+fetch("/ffmpeg-status").then((r) => r.json()).then((d) => { ffmpegAvailable = !!d.available; }).catch(() => {});
+
+/**
+ * Kaydı sunucudaki ffmpeg ile kayıpsız yeniden paketler (konteyner düzeltme) ve aynı
+ * dosyanın üzerine yazar. MediaRecorder çıktısı akış hâlinde olduğu için süre/arama
+ * tablosu eksik kalıyor — Chrome/VLC sorun etmiyor ama Windows'un yerleşik oynatıcısı
+ * ileri sarmada hata veriyor (0xC00D3E84). Bu adım onu düzeltir.
+ */
+async function fixRecording(fileHandle, ext) {
+  const file = await fileHandle.getFile();
+  const buf = await file.arrayBuffer();
+  const res = await fetch("/fix?ext=" + encodeURIComponent(ext), {
+    method: "POST",
+    body: buf,
+    headers: { "Content-Type": "application/octet-stream" },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Düzeltme başarısız");
+  }
+  const fixedBuf = await res.arrayBuffer();
+  const writable = await fileHandle.createWritable();
+  await writable.write(fixedBuf);
+  await writable.close();
+}
 
 if (!("showDirectoryPicker" in window)) {
   unsupportedWarn.style.display = "block";
@@ -313,6 +340,17 @@ async function onRecordingStop() {
     await writable.close();
     setStatus("Kaydedildi: " + name, false);
     await refreshRecordings();
+
+    if (ffmpegAvailable) {
+      setStatus("Uyumluluk için düzeltiliyor (ileri sarma vb.)…", false);
+      try {
+        await fixRecording(fileHandle, currentExt);
+        setStatus("Kaydedildi ve düzeltildi: " + name, false);
+      } catch (e) {
+        setStatus("Kaydedildi (düzeltme atlandı: " + e.message + "): " + name, false);
+      }
+      await refreshRecordings();
+    }
   } catch (e) {
     setStatus("Kayıt dosyaya yazılamadı: " + e.message, false);
   }
@@ -341,9 +379,11 @@ async function refreshRecordings() {
     row.className = "rec-item";
     const sizeMb = (f.size / 1024 / 1024).toFixed(1);
     const date = new Date(f.lastModified).toLocaleString("tr-TR");
+    const ext = f.name.toLowerCase().endsWith(".mp4") ? "mp4" : "webm";
     row.innerHTML = `
       <span class="rec-name">${f.name}<br><span class="rec-meta">${sizeMb} MB · ${date}</span></span>
       <button data-act="play">▶ Oynat</button>
+      ${ffmpegAvailable ? '<button data-act="fix" title="Windows Media Player\'da ileri sarma sorunu varsa">⟳ Düzelt</button>' : ""}
       <button data-act="delete">✕ Sil</button>
     `;
     row.querySelector('[data-act="play"]').onclick = async () => {
@@ -353,6 +393,19 @@ async function refreshRecordings() {
       player.scrollIntoView({ behavior: "smooth", block: "nearest" });
       player.play().catch(() => {});
     };
+    row.querySelector('[data-act="fix"]')?.addEventListener("click", async (e) => {
+      const btn = e.target;
+      btn.disabled = true;
+      btn.textContent = "Düzeltiliyor…";
+      try {
+        await fixRecording(f.handle, ext);
+        btn.textContent = "✓ Düzeltildi";
+      } catch (err) {
+        btn.textContent = "Hata";
+        alert("Düzeltilemedi: " + err.message);
+        btn.disabled = false;
+      }
+    });
     row.querySelector('[data-act="delete"]').onclick = async () => {
       if (!confirm(`"${f.name}" silinsin mi?`)) return;
       await dirHandle.removeEntry(f.name);

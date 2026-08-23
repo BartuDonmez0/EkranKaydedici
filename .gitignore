@@ -1,4 +1,7 @@
 node_modules/
 *.webm
+*.mp4
 *.log
 .DS_Store
+# ffmpeg.exe ~100MB, repoya değil README'deki adımlarla yerel olarak indirilir
+bin/
